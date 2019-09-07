@@ -115,26 +115,45 @@ public class StartAppAdsPlugin extends CordovaPlugin {
   }
 
   public void showBanner(CallbackContext callbackContext) {
-    startAppBanner = new Banner(cordova.getActivity(), new BannerListener() {
-    	@Override
-    	public void onReceiveAd(View banner) {
-        Log.d(TAG, "Banner has been loaded!");
-        cWebView.loadUrl("javascript:cordova.fireDocumentEvent('startappads.banner.load');");
-    	}
+    if (startAppBanner == null) {
+      startAppBanner = new Banner(cordova.getActivity(), new BannerListener() {
+        @Override
+        public void onReceiveAd(View banner) {
+          Log.d(TAG, "Banner has been loaded!");
+          cWebView.loadUrl("javascript:cordova.fireDocumentEvent('startappads.banner.load');");
+        }
 
-    	@Override
-    	public void onFailedToReceiveAd(View banner) {
-        Log.d(TAG, "Banner load failed!");
-        cWebView.loadUrl("javascript:cordova.fireDocumentEvent('startappads.banner.load_fail');");
-    	}
+        @Override
+        public void onFailedToReceiveAd(View banner) {
+          Log.d(TAG, "Banner load failed!");
+          cWebView.loadUrl("javascript:cordova.fireDocumentEvent('startappads.banner.load_fail');");
+        }
 
-    	@Override
-    	public void onClick(View banner) {
-        Log.d(TAG, "Banner clicked!");
-        cWebView.loadUrl("javascript:cordova.fireDocumentEvent('startappads.banner.clicked');");
-    	}
-    });
+        @Override
+        public void onClick(View banner) {
+          Log.d(TAG, "Banner clicked!");
+          cWebView.loadUrl("javascript:cordova.fireDocumentEvent('startappads.banner.clicked');");
+        }
+      });
 
+      _addBannerView(startAppBanner);
+    } else if (startAppBanner.getVisibility() == View.GONE) {
+      startAppBanner.resume();
+      startAppBanner.setVisibility(View.VISIBLE);
+    } else {
+      View view = cWebView.getView();
+      ViewGroup wvParentView = (ViewGroup) view.getParent();
+      
+      if (parentView != wvParentView) {
+        parentView.removeAllViews();
+        if (parentView.getParent() != null) {
+          ((ViewGroup)parentView.getParent()).removeView(parentView);
+        }
+        _addBannerView(startAppBanner);
+      }
+    }
+  }
+  public void _showBannerView(Banner adView) {
     View view = cWebView.getView();
     ViewGroup wvParentView = (ViewGroup) view.getParent();
 
@@ -143,14 +162,19 @@ public class StartAppAdsPlugin extends CordovaPlugin {
     }
 
     if (wvParentView != null && wvParentView != parentView) {
-        wvParentView.removeView(view);
-        LinearLayout content = (LinearLayout) parentView;
-        content.setOrientation(LinearLayout.VERTICAL);
-        parentView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 0.0F));
-        view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1.0F));
-        parentView.addView(view);
-        wvParentView.addView(parentView);
-        parentView.addView(startAppBanner);
+      wvParentView.removeView(view);
+      LinearLayout content = (LinearLayout) parentView;
+      content.setOrientation(LinearLayout.VERTICAL);
+      parentView.setLayoutParams(
+        new LinearLayout.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 0.0F));
+      view.setLayoutParams(
+        new LinearLayout.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1.0F));
+      
+      parentView.addView(view);
+      wvParentView.addView(parentView);
+      parentView.addView(adView);
     }
 
     parentView.bringToFront();
